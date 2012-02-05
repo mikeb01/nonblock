@@ -1,0 +1,3 @@
+bin
+src/*.o
+.sconsign.dblite
