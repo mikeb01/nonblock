@@ -35,7 +35,6 @@ static void* run(void* arg)
         int64_t l = *seq->value;
         l += i;
         *seq->value = l;
-        asm volatile("":::"memory");
         asm volatile("lock addl $0x0,(%rsp)");
     }
 
