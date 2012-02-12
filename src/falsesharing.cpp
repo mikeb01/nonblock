@@ -15,7 +15,7 @@ using std::endl;
 
 
 typedef struct {
-    int64_t* value;
+    int64_t* address;
     uint32_t core_id;
 } sequence_t;
 
@@ -31,7 +31,7 @@ static void* run(void* arg)
     pthread_setaffinity_np(pthread_self(), sizeof(cpu_set_t), &new_affinity);
 #endif
 
-    int64_t* address = &(*seq->value);
+    int64_t* address = seq->address;
 
     for (int i = 0; i < ITERATIONS; i++)
     {
@@ -98,9 +98,9 @@ int main (int argc, const char * argv[])
     posix_memalign(&ptr, size, size * 2);
     int64_t* values = (int64_t*) ptr;
 
-    seq1.value = &values[0];
+    seq1.address = &values[0];
     seq1.core_id = atoi(argv[2]);
-    seq2.value = &values[alignment];
+    seq2.address = &values[alignment];
     seq2.core_id = atoi(argv[3]);
 
     PCM * m = PCM::getInstance();
