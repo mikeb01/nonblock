@@ -4,6 +4,7 @@
 #include <pthread.h>
 #include <stdint.h>
 #include <stdlib.h>
+#include <time.h>
 
 #ifndef ITERATIONS
 #define ITERATIONS 100000000
@@ -48,15 +49,20 @@ static void* run(void* arg)
     return 0;
 }
 
-static inline uint64_t rdtsc(void)
+static timespec diff(timespec start, timespec end)
 {
-    uint32_t hi, lo;
-    asm volatile("rdtsc" : "=a"(lo), "=d"(hi));
-    return ((uint64_t)lo) | (((uint64_t)hi)<<32);
+    timespec temp;
+    if ((end.tv_nsec-start.tv_nsec)<0) {
+        temp.tv_sec = end.tv_sec-start.tv_sec-1;
+        temp.tv_nsec = 1000000000+end.tv_nsec-start.tv_nsec;
+    } else {
+        temp.tv_sec = end.tv_sec-start.tv_sec;
+        temp.tv_nsec = end.tv_nsec-start.tv_nsec;
+    }
+    return temp;
 }
 
-static void measure(CoreCounterState& before_sstate, CoreCounterState& after_sstate,
-                    uint32_t core_id, uint64_t before_ts, uint64_t after_ts)
+static void measure(CoreCounterState& before_sstate, CoreCounterState& after_sstate, uint32_t core_id)
 {
     cout << "CoreId: " << core_id << endl;
     cout << "L2 Cache hit ratio : " << getL2CacheHitRatio(before_sstate, after_sstate) * 100. << " %" << endl;
@@ -73,6 +79,8 @@ int main (int argc, const char * argv[])
     sequence_t seq2;
     pthread_t thread1;
     pthread_t thread2;
+    timespec t0;
+    timespec t1;
     void* join1;
     void* join2;
     void* ptr;
@@ -106,25 +114,27 @@ int main (int argc, const char * argv[])
 
     m->program();
 
-    uint64_t t0 = rdtsc();
     CoreCounterState before1 = getCoreCounterState(seq1.core_id);
     CoreCounterState before2 = getCoreCounterState(seq2.core_id);
 
+    clock_gettime(CLOCK_MONOTONIC_RAW, &t0);
     pthread_create(&thread1, NULL, run, (void*) &seq1);
     pthread_create(&thread2, NULL, run, (void*) &seq2);
 
     pthread_join(thread1, &join1);
     pthread_join(thread2, &join2);
+    clock_gettime(CLOCK_MONOTONIC_RAW, &t1);
 
     CoreCounterState after1 = getCoreCounterState(seq1.core_id);
     CoreCounterState after2 = getCoreCounterState(seq2.core_id);
-    uint64_t t1 = rdtsc();
+
+    timespec taken = diff(t0, t1);
 
     cout << endl << "Cache Alignment: " << size << endl;
-    cout << "Time Taken " << (t1 - t0) / 1000000 << "ms" << endl << endl;
+    cout << "Time Taken " << taken.tv_sec << "." << taken.tv_nsec/1000000  << "s" << endl << endl;
 
-    measure(before1, after1, seq1.core_id, t0, t1);
-    measure(before2, after2, seq2.core_id, t0, t1);
+    measure(before1, after1, seq1.core_id);
+    measure(before2, after2, seq2.core_id);
     m->cleanup();
     delete[] values;
 }
