@@ -30,11 +30,13 @@ static void* run(void* arg)
     pthread_setaffinity_np(pthread_self(), sizeof(cpu_set_t), &new_affinity);
 #endif
 
+    int64_t* address = &(*seq->value);
+
     for (int i = 0; i < ITERATIONS; i++)
     {
-        int64_t l = *seq->value;
-        l += i;
-        *seq->value = l;
+        int64_t value = *address;
+        value += i;
+        *address = value;
         asm volatile("lock addl $0x0,(%rsp)");
     }
 
