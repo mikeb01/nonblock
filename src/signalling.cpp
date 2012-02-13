@@ -57,7 +57,7 @@ static void* write_with_soft_barrier(void* arg)
     for (int i = 0; i <= ITERATIONS; i++)
     {
         *address = i;
-        asm volatile(":::memory");
+        asm volatile("":::"memory");
     }
     
     pthread_exit(NULL);
