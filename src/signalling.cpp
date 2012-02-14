@@ -17,16 +17,15 @@ using std::endl;
 
 pthread_mutex_t lock;
 pthread_cond_t condition;
+volatile int64_t sequence = -1;
 
 static void* writer_with_lock(void* arg)
 {
-    int64_t* address = (int64_t*) arg;
-    
     for (int i = 0; i <= ITERATIONS; i++)
     {
         pthread_mutex_lock(&lock);
-        
-        *address = i;
+
+        sequence = i;
         
         pthread_cond_signal(&condition);
         pthread_mutex_unlock(&lock);
@@ -38,11 +37,9 @@ static void* writer_with_lock(void* arg)
 
 static void* write_with_full_fence(void* arg)
 {
-    int64_t* address = (int64_t*) arg;
-    
     for (int i = 0; i <= ITERATIONS; i++)
     {
-        *address = i;
+        sequence = i;
         asm volatile("lock addl $0x0,(%rsp)");
     }
     
@@ -52,11 +49,9 @@ static void* write_with_full_fence(void* arg)
 
 static void* write_with_soft_barrier(void* arg)
 {
-    int64_t* address = (int64_t*) arg;
-    
     for (int i = 0; i <= ITERATIONS; i++)
     {
-        *address = i;
+        sequence = i;
         asm volatile("":::"memory");
     }
     
@@ -66,13 +61,9 @@ static void* write_with_soft_barrier(void* arg)
 
 static void* reader_without_lock(void* arg)
 {
-    int64_t* address = (int64_t*) arg;
-    volatile int64_t value;
-
     while (true)
     {
-        value = *address;
-        if (value >= ITERATIONS)
+        if (sequence >= ITERATIONS)
         {
             break;
         }
@@ -84,14 +75,12 @@ static void* reader_without_lock(void* arg)
 
 static void* reader_with_lock(void* arg)
 {
-    int64_t* address = (int64_t*) arg;
-    
     while (true)
     {
         pthread_mutex_lock(&lock);
         pthread_cond_wait(&condition, &lock);
         
-        if (*address >= ITERATIONS)
+        if (sequence >= ITERATIONS)
         {
             break;
         }
@@ -107,13 +96,12 @@ int main (int argc, const char * argv[])
 {
     pthread_t writingThread;
     pthread_t readingThread;
-    int64_t value;
     
     pthread_mutex_init(&lock, NULL);
     pthread_cond_init(&condition, NULL);
     
-    pthread_create(&readingThread, NULL, reader_with_lock, (void*) &value);
-    pthread_create(&writingThread, NULL, writer_with_lock, (void*) &value);
+    pthread_create(&readingThread, NULL, reader_with_lock, (void*) NULL);
+    pthread_create(&writingThread, NULL, writer_with_lock, (void*) NULL);
     
     pthread_join(readingThread, NULL);
     pthread_join(writingThread, NULL);
