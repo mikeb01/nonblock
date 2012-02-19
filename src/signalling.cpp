@@ -174,8 +174,11 @@ int main (int argc, const char * argv[])
     timespec taken = diff(t0, t1);
 
     cout << "Time Taken " << taken.tv_sec << "." << taken.tv_nsec/1000000  << "s" << endl;
-
+    cout << "Reader" << endl;
+    cout << "======" << endl;
     measure(before1, after1, core_a);
+    cout << "Writer" << endl;
+    cout << "======" << endl;
     measure(before2, after2, core_b);
     m->cleanup();
     
