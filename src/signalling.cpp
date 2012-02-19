@@ -125,6 +125,9 @@ int main (int argc, const char * argv[])
     switch (type)
     {
         case 0:
+            pthread_mutex_init(&lock, NULL);
+            pthread_cond_init(&condition, NULL);
+
             reader_fun = reader_with_lock;
             writer_fun = writer_with_lock;
             break;
@@ -145,15 +148,10 @@ int main (int argc, const char * argv[])
     pthread_t writingThread;
     pthread_t readingThread;
     
-    pthread_mutex_init(&lock, NULL);
-    pthread_cond_init(&condition, NULL);
-
     PCM * m = PCM::getInstance();
     if (!m->good())
     {
         cout << "Can not access CPU counters" << endl;
-        cout << "Try to execute 'modprobe msr' as root user and then" << endl;
-        cout << "you also must have read and write permissions for /dev/cpu/?/msr devices (the 'chown' command can help).";
         return -1;
     }
 
