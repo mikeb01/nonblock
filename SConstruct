@@ -7,3 +7,4 @@ env = Environment(CPPPATH   = ['include'],
                   LIBPATH   = ['lib'])
 
 env.Program('bin/falsesharing', 'src/falsesharing.cpp')
+env.Program('bin/signalling', 'src/signalling.cpp')
