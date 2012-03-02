@@ -60,8 +60,8 @@ static void* writer_with_soft_barrier(void* arg)
 
     for (int i = 0; i <= ITERATIONS; i++)
     {
-        sequence = i;
         asm volatile("":::"memory");
+        sequence = i;
     }
     
     pthread_exit(NULL);
